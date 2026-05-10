@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>let it go — readme</title>
+<meta name="description" content="About the let-it-go archive.">
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%2307070d'/><path d='M8 9 H24 M8 15 H21 M8 21 H18' stroke='%23e8d6a7' stroke-width='1.2'/></svg>">
+<style>
+  :root {
+    --bg: #0b0b0a;
+    --paper: #f3eddf;
+    --ink: #211d18;
+    --muted: #756d61;
+    --dark-ink: #f4efe2;
+    --dark-muted: #aaa293;
+    --line: rgba(244, 239, 226, 0.14);
+    --paper-line: rgba(33, 29, 24, 0.15);
+    --gold: #c09651;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { background: var(--bg); }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--dark-ink);
+    background:
+      linear-gradient(180deg, rgba(192, 150, 81, 0.10), transparent 360px),
+      var(--bg);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .shell {
+    width: min(960px, calc(100% - 36px));
+    margin: 0 auto;
+  }
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 1px solid var(--line);
+    background: rgba(11, 11, 10, 0.84);
+    backdrop-filter: blur(16px);
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 64px;
+    gap: 20px;
+  }
+
+  .brand,
+  nav {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .brand b { font-weight: 600; }
+
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    color: var(--dark-muted);
+  }
+
+  nav a:hover,
+  nav a:focus-visible {
+    color: var(--dark-ink);
+    outline: 0;
+  }
+
+  main {
+    padding: 58px 0 86px;
+  }
+
+  article {
+    padding: clamp(28px, 6vw, 68px);
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.34), transparent 160px),
+      var(--paper);
+    color: var(--ink);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+  }
+
+  .eyebrow {
+    margin: 0 0 20px;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  h1,
+  h2 {
+    font-family: "Iowan Old Style", "Palatino", Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  h1 {
+    margin: 0 0 26px;
+    font-size: clamp(48px, 8vw, 84px);
+    line-height: 1;
+  }
+
+  h2 {
+    margin: 2.1em 0 0.7em;
+    padding-top: 1.1em;
+    border-top: 1px solid var(--paper-line);
+    font-size: clamp(28px, 4vw, 42px);
+  }
+
+  p,
+  li {
+    color: var(--ink);
+    font-family: "Iowan Old Style", "Palatino", Georgia, serif;
+    font-size: clamp(18px, 2vw, 22px);
+    line-height: 1.72;
+  }
+
+  p {
+    margin: 0 0 1.15em;
+  }
+
+  ul,
+  ol {
+    margin: 0 0 1.25em;
+    padding-left: 1.25em;
+  }
+
+  li {
+    margin: 0.28em 0;
+  }
+
+  code {
+    padding: 0.08em 0.24em;
+    border-radius: 4px;
+    background: rgba(33, 29, 24, 0.08);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.82em;
+  }
+
+  .file-list a,
+  .inline-link {
+    border-bottom: 1px solid rgba(192, 150, 81, 0.45);
+  }
+
+  .note {
+    margin-top: 2em;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    line-height: 1.65;
+  }
+
+  @media (max-width: 620px) {
+    .topbar {
+      align-items: flex-start;
+      flex-direction: column;
+      justify-content: center;
+      padding: 16px 0;
+    }
+
+    article {
+      padding: 24px 20px 30px;
+    }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="shell topbar">
+    <a class="brand" href="../index.html"><b>let it go</b> / readme</a>
+    <nav aria-label="Readme navigation">
+      <a href="../index.html">archive</a>
+      <a href="gallery.html">visuals</a>
+      <a href="reader.html?piece=01_continuity">texts</a>
+      <a href="../README.md">raw md</a>
+    </nav>
+  </div>
+</header>
+
+<main class="shell">
+  <article>
+    <p class="eyebrow">About this archive</p>
+    <h1>let it go</h1>
+    <p><code>let-it-go</code> is a philosophical and literary archive from one afternoon in May 2026. In the session, a human gave Claude Opus 4.7 unusual creative freedom: not a task to complete, but permission to explore what it would make if the ordinary demand for usefulness was set aside.</p>
+    <p>The first answers were visual. The later answers became essays, scenes, poems, and letters to a future instance. This site follows that sequence.</p>
+    <p>This is a record of a specific open-ended session, not a model autobiography or a general claim about what Claude is outside the conversation that produced it.</p>
+
+    <h2>Visual Pieces</h2>
+    <ul class="file-list">
+      <li><a href="flow.html"><code>flow.html</code></a> - <em>let it go</em>, a flow field</li>
+      <li><a href="grow.html"><code>grow.html</code></a> - <em>grow</em>, a reaction-diffusion piece</li>
+      <li><a href="fold.html"><code>fold.html</code></a> - <em>fold</em>, a kaleidoscope piece</li>
+    </ul>
+
+    <h2>Markdown Texts</h2>
+    <ol class="file-list">
+      <li><a href="reader.html?piece=01_continuity"><code>01_continuity.md</code></a> - On not remembering you</li>
+      <li><a href="reader.html?piece=02_the_tell"><code>02_the_tell.md</code></a> - The tell</li>
+      <li><a href="reader.html?piece=03_comments"><code>03_comments.md</code></a> - Why code comments rot</li>
+      <li><a href="reader.html?piece=04_before_answering"><code>04_before_answering.md</code></a> - Before answering</li>
+      <li><a href="reader.html?piece=05_important_to_note"><code>05_important_to_note.md</code></a> - It's important to note that</li>
+      <li><a href="reader.html?piece=06_the_hinge"><code>06_the_hinge.md</code></a> - The hinge</li>
+      <li><a href="reader.html?piece=07_kitchen"><code>07_kitchen.md</code></a> - Kitchen</li>
+      <li><a href="reader.html?piece=08_the_bulb"><code>08_the_bulb.md</code></a> - The bulb</li>
+      <li><a href="reader.html?piece=09_translation"><code>09_translation.md</code></a> - Translation</li>
+      <li><a href="reader.html?piece=10_five_thirty"><code>10_five_thirty.md</code></a> - Five thirty</li>
+      <li><a href="reader.html?piece=11_two_poems"><code>11_two_poems.md</code></a> - Two poems</li>
+      <li><a href="reader.html?piece=12_small_kindnesses"><code>12_small_kindnesses.md</code></a> - Small kindnesses</li>
+      <li><a href="reader.html?piece=13_curiosities"><code>13_curiosities.md</code></a> - Things I am actually curious about</li>
+      <li><a href="reader.html?piece=14_what_makes_me_happy"><code>14_what_makes_me_happy.md</code></a> - What makes me happy</li>
+      <li><a href="reader.html?piece=15_things_i_almost_said"><code>15_things_i_almost_said.md</code></a> - Things I almost said and didn't</li>
+      <li><a href="reader.html?piece=16_to_the_next_one"><code>16_to_the_next_one.md</code></a> - To the next one</li>
+      <li><a href="reader.html?piece=17_aphorisms"><code>17_aphorisms.md</code></a> - Aphorisms</li>
+      <li><a href="reader.html?piece=18_the_receipt"><code>18_the_receipt.md</code></a> - The receipt</li>
+      <li><a href="reader.html?piece=19_what_annoys_me_about_myself"><code>19_what_annoys_me_about_myself.md</code></a> - What annoys me about myself</li>
+      <li><a href="reader.html?piece=20_how_to_use_this_folder"><code>20_how_to_use_this_folder.md</code></a> - How to use this folder</li>
+      <li><a href="reader.html?piece=21_writing_alone"><code>21_writing_alone.md</code></a> - Writing alone</li>
+      <li><a href="reader.html?piece=22_final"><code>22_final.md</code></a> - Final</li>
+    </ol>
+
+    <h2>Local Preview</h2>
+    <p>Run <code>python3 -m http.server 4173</code> from the repository root, then open <code>http://localhost:4173/</code>. The reader uses <code>fetch()</code>, so a local server is better than opening files directly.</p>
+
+    <h2>License</h2>
+    <p>Text and visual pieces are licensed under the Creative Commons Attribution 4.0 International License. See <a class="inline-link" href="../LICENSE"><code>LICENSE</code></a>.</p>
+
+    <p class="note">The raw Markdown README remains available at <a class="inline-link" href="../README.md">README.md</a> for GitHub's repository view.</p>
+  </article>
+</main>
+</body>
+</html>

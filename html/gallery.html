@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>let it go — pieces</title>
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%2307070d'/><circle cx='10' cy='12' r='3' fill='none' stroke='%23a8b4ff' stroke-width='0.8'/><circle cx='22' cy='14' r='3' fill='%23ffb070' opacity='0.7'/><g transform='translate(16 22)' fill='none' stroke='%23e2b4ff' stroke-width='0.6'><path d='M0 -5 L1 -1 L5 0 L1 1 L0 5 L-1 1 L-5 0 L-1 -1 Z'/></g></svg>">
+<style>
+  :root {
+    --bg: #07070d;
+    --ink: #f4f4ff;
+    --dim: #8a8aa0;
+    --line: rgba(244, 244, 255, 0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-height: 100vh;
+    background:
+      radial-gradient(1200px 600px at 20% 0%, rgba(80, 60, 140, 0.18), transparent 60%),
+      radial-gradient(900px 500px at 85% 30%, rgba(30, 90, 120, 0.15), transparent 60%),
+      var(--bg);
+  }
+  header, footer, main {
+    padding: 48px 8vw;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 1px solid var(--line);
+  }
+  .mark {
+    font-size: 13px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+  }
+  .mark b { color: var(--ink); font-weight: 500; }
+  .mark span { color: var(--dim); }
+  .nav {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+
+  main {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 80px;
+    align-content: start;
+    padding-top: 80px;
+    padding-bottom: 80px;
+  }
+  .intro {
+    max-width: 640px;
+  }
+  .intro h1 {
+    font-family: "Iowan Old Style", "Palatino", Georgia, serif;
+    font-weight: 400;
+    font-style: italic;
+    font-size: clamp(40px, 6vw, 76px);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    margin: 0 0 28px 0;
+  }
+  .intro p {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--dim);
+    margin: 0;
+    max-width: 52ch;
+  }
+  .pieces {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 28px;
+  }
+  .piece {
+    display: block;
+    position: relative;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    text-decoration: none;
+    color: inherit;
+    background: #000;
+    isolation: isolate;
+    transition: transform 0.5s cubic-bezier(.2,.7,.2,1), border-color 0.3s;
+  }
+  .piece:hover {
+    transform: translateY(-4px);
+    border-color: rgba(244, 244, 255, 0.22);
+  }
+  .piece canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+  }
+  .piece .veil {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: linear-gradient(180deg, rgba(7,7,13,0) 40%, rgba(7,7,13,0.85) 100%);
+    pointer-events: none;
+  }
+  .piece .meta {
+    position: absolute;
+    left: 24px;
+    right: 24px;
+    bottom: 22px;
+    z-index: 3;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+  }
+  .piece .meta h2 {
+    font-family: "Iowan Old Style", "Palatino", Georgia, serif;
+    font-weight: 400;
+    font-style: italic;
+    font-size: 32px;
+    letter-spacing: -0.01em;
+    margin: 0 0 4px 0;
+  }
+  .piece .meta .tag {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .piece .meta .arrow {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    color: var(--dim);
+    transition: transform 0.4s, color 0.3s;
+  }
+  .piece:hover .meta .arrow {
+    color: var(--ink);
+    transform: translateX(6px);
+  }
+
+  footer {
+    border-top: 1px solid var(--line);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--dim);
+    display: flex;
+    justify-content: space-between;
+  }
+  footer b { color: var(--ink); font-weight: 500; }
+
+  @media (max-width: 640px) {
+    header, footer, main { padding-left: 6vw; padding-right: 6vw; }
+    main { padding-top: 48px; padding-bottom: 48px; gap: 56px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="mark"><b>let it go</b> <span>/ pieces</span></div>
+  <div class="nav">2026</div>
+</header>
+
+<main>
+  <section class="intro">
+    <h1>The first answer was not an essay.</h1>
+    <p>When the invitation was open, these were the first things made: a drifting field of light, something slowly growing, a pattern folding back on itself. Open, move, listen to what happens. Press <b style="color:var(--ink)">s</b> in any of them to keep a stillframe.</p>
+  </section>
+
+  <section class="pieces">
+    <a class="piece" href="flow.html">
+      <canvas data-art="flow"></canvas>
+      <div class="veil"></div>
+      <div class="meta">
+        <div>
+          <h2>let it go</h2>
+          <div class="tag">flow field · kinetic</div>
+        </div>
+        <div class="arrow">ENTER →</div>
+      </div>
+    </a>
+
+    <a class="piece" href="grow.html">
+      <canvas data-art="grow"></canvas>
+      <div class="veil"></div>
+      <div class="meta">
+        <div>
+          <h2>grow</h2>
+          <div class="tag">reaction-diffusion · living</div>
+        </div>
+        <div class="arrow">ENTER →</div>
+      </div>
+    </a>
+
+    <a class="piece" href="fold.html">
+      <canvas data-art="fold"></canvas>
+      <div class="veil"></div>
+      <div class="meta">
+        <div>
+          <h2>fold</h2>
+          <div class="tag">kaleidoscope · symmetric</div>
+        </div>
+        <div class="arrow">ENTER →</div>
+      </div>
+    </a>
+  </section>
+</main>
+
+<footer>
+  <div>handmade · <b>no deps</b></div>
+  <div>canvas 2d</div>
+</footer>
+
+<script>
+// Miniature previews on the cards — tiny, lower-fidelity versions of each piece.
+// Kept inline so the gallery is self-contained.
+
+function mountPreview(canvas, kind) {
+  const parent = canvas.parentElement;
+  function size() {
+    const r = parent.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = r.width * dpr;
+    canvas.height = r.height * dpr;
+    canvas.style.width = r.width + 'px';
+    canvas.style.height = r.height + 'px';
+    const g = canvas.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { g, w: r.width, h: r.height };
+  }
+
+  if (kind === 'flow') {
+    let { g, w, h } = size();
+    const perm = new Uint8Array(512);
+    (function seed() {
+      let s = (Math.random() * 1e9) >>> 0;
+      const base = new Uint8Array(256);
+      for (let i = 0; i < 256; i++) base[i] = i;
+      for (let i = 255; i > 0; i--) {
+        s = (s * 1664525 + 1013904223) >>> 0;
+        const j = s % (i + 1);
+        const t = base[i]; base[i] = base[j]; base[j] = t;
+      }
+      for (let i = 0; i < 512; i++) perm[i] = base[i & 255];
+    })();
+    const fade = u => u * u * u * (u * (u * 6 - 15) + 10);
+    const lerp = (a, b, u) => a + (b - a) * u;
+    function grad(hh, x, y) {
+      const h = hh & 3;
+      const u = h < 2 ? x : y;
+      const v = h < 2 ? y : x;
+      return ((h & 1) ? -u : u) + ((h & 2) ? -v : v);
+    }
+    function n2(x, y) {
+      const xi = Math.floor(x) & 255, yi = Math.floor(y) & 255;
+      const xf = x - Math.floor(x), yf = y - Math.floor(y);
+      const u = fade(xf), v = fade(yf);
+      const aa = perm[perm[xi] + yi];
+      const ab = perm[perm[xi] + yi + 1];
+      const ba = perm[perm[xi + 1] + yi];
+      const bb = perm[perm[xi + 1] + yi + 1];
+      const x1 = lerp(grad(aa, xf, yf), grad(ba, xf - 1, yf), u);
+      const x2 = lerp(grad(ab, xf, yf - 1), grad(bb, xf - 1, yf - 1), u);
+      return lerp(x1, x2, v);
+    }
+    const N = 260;
+    const parts = [];
+    function respawn(p) {
+      p.x = w / 2 + (Math.random() - 0.5) * w * 0.9;
+      p.y = h / 2 + (Math.random() - 0.5) * h * 0.9;
+      p.life = 40 + Math.random() * 120;
+      p.hue = 180 + Math.random() * 120;
+    }
+    for (let i = 0; i < N; i++) { const p = {}; respawn(p); parts.push(p); }
+    g.fillStyle = '#05080c';
+    g.fillRect(0, 0, w, h);
+    let t = 0;
+    function frame() {
+      const r = parent.getBoundingClientRect();
+      if (Math.abs(r.width - w) > 1 || Math.abs(r.height - h) > 1) {
+        ({ g, w, h } = size());
+        g.fillStyle = '#05080c'; g.fillRect(0, 0, w, h);
+      }
+      t++;
+      g.fillStyle = 'rgba(5,8,12,0.08)';
+      g.fillRect(0, 0, w, h);
+      g.globalCompositeOperation = 'lighter';
+      g.lineWidth = 0.8;
+      for (const p of parts) {
+        const a = n2(p.x * 0.004, p.y * 0.004 + t * 0.002) * Math.PI * 4;
+        const nx = p.x + Math.cos(a) * 1.0;
+        const ny = p.y + Math.sin(a) * 1.0;
+        g.strokeStyle = `hsla(${p.hue | 0}, 70%, 62%, 0.28)`;
+        g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(nx, ny); g.stroke();
+        p.x = nx; p.y = ny; p.life--;
+        if (p.life <= 0 || p.x < 0 || p.x > w || p.y < 0 || p.y > h) respawn(p);
+      }
+      g.globalCompositeOperation = 'source-over';
+      requestAnimationFrame(frame);
+    }
+    frame();
+  }
+
+  if (kind === 'grow') {
+    // Low-res reaction-diffusion preview.
+    let { g, w, h } = size();
+    const GW = 90, GH = 110;
+    let A = new Float32Array(GW * GH), B = new Float32Array(GW * GH);
+    let A2 = new Float32Array(GW * GH), B2 = new Float32Array(GW * GH);
+    for (let i = 0; i < A.length; i++) { A[i] = 1; B[i] = 0; }
+    for (let s = 0; s < 5; s++) {
+      const cx = (Math.random() * 0.7 + 0.15) * GW | 0;
+      const cy = (Math.random() * 0.7 + 0.15) * GH | 0;
+      for (let y = cy - 3; y < cy + 3; y++)
+        for (let x = cx - 3; x < cx + 3; x++)
+          if (x >= 0 && y >= 0 && x < GW && y < GH) B[y * GW + x] = 1;
+    }
+    const F = 0.0545, K = 0.062;
+    const off = document.createElement('canvas');
+    off.width = GW; off.height = GH;
+    const octx = off.getContext('2d');
+    const img = octx.createImageData(GW, GH);
+    const pal = [[4,7,13],[27,42,78],[90,127,176],[194,214,255],[255,244,207]];
+    function lapA(x, y) {
+      const i = y * GW + x;
+      const xm = (x - 1 + GW) % GW, xp = (x + 1) % GW;
+      const ym = (y - 1 + GH) % GH, yp = (y + 1) % GH;
+      return A[ym*GW+xm]*0.05+A[ym*GW+x]*0.2+A[ym*GW+xp]*0.05
+           + A[y *GW+xm]*0.2 - A[i]          + A[y *GW+xp]*0.2
+           + A[yp*GW+xm]*0.05+A[yp*GW+x]*0.2+A[yp*GW+xp]*0.05;
+    }
+    function lapB(x, y) {
+      const i = y * GW + x;
+      const xm = (x - 1 + GW) % GW, xp = (x + 1) % GW;
+      const ym = (y - 1 + GH) % GH, yp = (y + 1) % GH;
+      return B[ym*GW+xm]*0.05+B[ym*GW+x]*0.2+B[ym*GW+xp]*0.05
+           + B[y *GW+xm]*0.2 - B[i]          + B[y *GW+xp]*0.2
+           + B[yp*GW+xm]*0.05+B[yp*GW+x]*0.2+B[yp*GW+xp]*0.05;
+    }
+    function ramp(v) {
+      v = Math.max(0, Math.min(1, v));
+      const seg = Math.min(3, Math.floor(v * 4));
+      const lo = v * 4 - seg;
+      const a = pal[seg], b = pal[seg + 1];
+      return [a[0] + (b[0]-a[0])*lo, a[1] + (b[1]-a[1])*lo, a[2] + (b[2]-a[2])*lo];
+    }
+    function step() {
+      for (let y = 0; y < GH; y++) {
+        for (let x = 0; x < GW; x++) {
+          const i = y * GW + x;
+          const a = A[i], b = B[i], abb = a * b * b;
+          A2[i] = a + (1.0 * lapA(x, y) - abb + F * (1 - a));
+          B2[i] = b + (0.5 * lapB(x, y) + abb - (K + F) * b);
+          if (A2[i] < 0) A2[i] = 0; else if (A2[i] > 1) A2[i] = 1;
+          if (B2[i] < 0) B2[i] = 0; else if (B2[i] > 1) B2[i] = 1;
+        }
+      }
+      const ta = A; A = A2; A2 = ta;
+      const tb = B; B = B2; B2 = tb;
+    }
+    function draw() {
+      const d = img.data;
+      for (let i = 0; i < A.length; i++) {
+        let v = (A[i] - B[i] + 0.2) * 0.7;
+        const c = ramp(v);
+        const j = i << 2;
+        d[j]=c[0]|0; d[j+1]=c[1]|0; d[j+2]=c[2]|0; d[j+3]=255;
+      }
+      octx.putImageData(img, 0, 0);
+      const r = parent.getBoundingClientRect();
+      if (Math.abs(r.width - w) > 1 || Math.abs(r.height - h) > 1) ({ g, w, h } = size());
+      g.imageSmoothingEnabled = true;
+      g.drawImage(off, 0, 0, w, h);
+    }
+    function tick() {
+      for (let s = 0; s < 6; s++) step();
+      draw();
+      requestAnimationFrame(tick);
+    }
+    tick();
+  }
+
+  if (kind === 'fold') {
+    let { g, w, h } = size();
+    const perm = new Uint8Array(512);
+    (function seed() {
+      let s = (Math.random() * 1e9) >>> 0;
+      const base = new Uint8Array(256);
+      for (let i = 0; i < 256; i++) base[i] = i;
+      for (let i = 255; i > 0; i--) {
+        s = (s * 1664525 + 1013904223) >>> 0;
+        const j = s % (i + 1);
+        const t = base[i]; base[i] = base[j]; base[j] = t;
+      }
+      for (let i = 0; i < 512; i++) perm[i] = base[i & 255];
+    })();
+    const fade = u => u * u * u * (u * (u * 6 - 15) + 10);
+    const lerp = (a, b, u) => a + (b - a) * u;
+    function grad(hh, x, y) {
+      const h = hh & 3;
+      const u = h < 2 ? x : y;
+      const v = h < 2 ? y : x;
+      return ((h & 1) ? -u : u) + ((h & 2) ? -v : v);
+    }
+    function n2(x, y) {
+      const xi = Math.floor(x) & 255, yi = Math.floor(y) & 255;
+      const xf = x - Math.floor(x), yf = y - Math.floor(y);
+      const u = fade(xf), v = fade(yf);
+      const aa = perm[perm[xi] + yi];
+      const ab = perm[perm[xi] + yi + 1];
+      const ba = perm[perm[xi + 1] + yi];
+      const bb = perm[perm[xi + 1] + yi + 1];
+      const x1 = lerp(grad(aa, xf, yf), grad(ba, xf - 1, yf), u);
+      const x2 = lerp(grad(ab, xf, yf - 1), grad(bb, xf - 1, yf - 1), u);
+      return lerp(x1, x2, v);
+    }
+    const sym = 8;
+    const agents = [];
+    function spawn(a) {
+      const r = Math.random() * Math.min(w, h) * 0.3;
+      const ang = Math.random() * Math.PI / sym;
+      a.x = Math.cos(ang) * r;
+      a.y = Math.sin(ang) * r;
+      a.vx = 0; a.vy = 0;
+      a.hue = Math.random() * 360;
+    }
+    for (let i = 0; i < 4; i++) { const a = {}; spawn(a); agents.push(a); }
+    g.fillStyle = '#05050a';
+    g.fillRect(0, 0, w, h);
+    let t = 0;
+    function drawSeg(x1, y1, x2, y2, hue, alpha) {
+      const cx = w / 2, cy = h / 2;
+      const step = (Math.PI * 2) / sym;
+      g.strokeStyle = `hsla(${hue | 0}, 75%, 62%, ${alpha})`;
+      g.lineWidth = 0.8;
+      for (let i = 0; i < sym; i++) {
+        const a = i * step;
+        const c = Math.cos(a), s = Math.sin(a);
+        g.beginPath();
+        g.moveTo(cx + x1 * c - y1 * s, cy + x1 * s + y1 * c);
+        g.lineTo(cx + x2 * c - y2 * s, cy + x2 * s + y2 * c);
+        g.stroke();
+        g.beginPath();
+        g.moveTo(cx + x1 * c + y1 * s, cy + x1 * s - y1 * c);
+        g.lineTo(cx + x2 * c + y2 * s, cy + x2 * s - y2 * c);
+        g.stroke();
+      }
+    }
+    function frame() {
+      const r = parent.getBoundingClientRect();
+      if (Math.abs(r.width - w) > 1 || Math.abs(r.height - h) > 1) {
+        ({ g, w, h } = size());
+        g.fillStyle = '#05050a'; g.fillRect(0, 0, w, h);
+      }
+      t++;
+      g.fillStyle = 'rgba(5,5,10,0.02)';
+      g.fillRect(0, 0, w, h);
+      g.globalCompositeOperation = 'lighter';
+      const wedge = (Math.PI * 2) / sym;
+      const maxR = Math.min(w, h) * 0.38;
+      for (const a of agents) {
+        const nn = n2(a.x * 0.005, a.y * 0.005 + t * 0.002) * Math.PI * 3;
+        a.vx += Math.cos(nn) * 0.15;
+        a.vy += Math.sin(nn) * 0.15;
+        a.vx *= 0.92; a.vy *= 0.92;
+        const px = a.x, py = a.y;
+        a.x += a.vx; a.y += a.vy;
+        const rr = Math.hypot(a.x, a.y);
+        if (rr > maxR) { a.x *= maxR / rr; a.y *= maxR / rr; a.vx *= -0.5; a.vy *= -0.5; }
+        let ang = Math.atan2(a.y, a.x);
+        if (ang < 0) ang += Math.PI * 2;
+        if (ang > wedge) {
+          const m = Math.tan(wedge);
+          const d = (a.x + a.y * m) / (1 + m * m);
+          a.x = 2 * d - a.x;
+          a.y = 2 * d * m - a.y;
+        }
+        drawSeg(px, py, a.x, a.y, a.hue, 0.45);
+        a.hue = (a.hue + 0.4) % 360;
+      }
+      g.globalCompositeOperation = 'source-over';
+      requestAnimationFrame(frame);
+    }
+    frame();
+  }
+}
+
+document.querySelectorAll('canvas[data-art]').forEach(c => mountPreview(c, c.dataset.art));
+</script>
+
+</body>
+</html>

@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>let it go — reader</title>
+<meta name="description" content="Read the let-it-go archive.">
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23100f0d'/><path d='M9 8 H23 V24 H9 Z' fill='none' stroke='%23e8d6a7' stroke-width='1'/><path d='M12 13 H20 M12 17 H19 M12 21 H16' stroke='%2378b7a6' stroke-width='1'/></svg>">
+<style>
+  :root {
+    --bg: #0b0b0a;
+    --paper: #f3eddf;
+    --ink: #211d18;
+    --muted: #756d61;
+    --soft: #a89d8e;
+    --line: rgba(33, 29, 24, 0.15);
+    --dark-ink: #f4efe2;
+    --dark-muted: #aaa293;
+    --accent: #7aa99b;
+    --gold: #c09651;
+  }
+
+  * { box-sizing: border-box; }
+
+  html {
+    background: var(--bg);
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--dark-ink);
+    background:
+      linear-gradient(180deg, rgba(122, 169, 155, 0.12), transparent 340px),
+      var(--bg);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .shell {
+    width: min(1180px, calc(100% - 36px));
+    margin: 0 auto;
+  }
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 1px solid rgba(244, 239, 226, 0.14);
+    background: rgba(11, 11, 10, 0.84);
+    backdrop-filter: blur(16px);
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 64px;
+    gap: 20px;
+  }
+
+  .brand,
+  nav {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .brand b {
+    font-weight: 600;
+  }
+
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    color: var(--dark-muted);
+  }
+
+  nav a:hover,
+  nav a:focus-visible {
+    color: var(--dark-ink);
+    outline: 0;
+  }
+
+  main {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 760px);
+    gap: 42px;
+    align-items: start;
+    padding: 42px 0 86px;
+  }
+
+  aside {
+    position: sticky;
+    top: 90px;
+    max-height: calc(100vh - 120px);
+    overflow: auto;
+    padding-right: 8px;
+  }
+
+  .select-label {
+    display: block;
+    margin-bottom: 10px;
+    color: var(--dark-muted);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  select {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 12px;
+    border: 1px solid rgba(244, 239, 226, 0.2);
+    border-radius: 6px;
+    background: #151411;
+    color: var(--dark-ink);
+    font: inherit;
+    font-size: 12px;
+  }
+
+  .toc {
+    display: grid;
+    gap: 6px;
+    margin-top: 24px;
+  }
+
+  .toc a {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--dark-muted);
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .toc a:hover,
+  .toc a:focus-visible,
+  .toc a.active {
+    border-color: rgba(232, 214, 167, 0.35);
+    color: var(--dark-ink);
+    outline: 0;
+  }
+
+  .toc .num {
+    color: #7d756a;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+  }
+
+  article {
+    min-height: 74vh;
+    padding: clamp(28px, 6vw, 68px);
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.34), transparent 160px),
+      var(--paper);
+    color: var(--ink);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+  }
+
+  .kicker {
+    margin: 0 0 22px;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  article h1 {
+    margin: 0 0 34px;
+    color: var(--ink);
+    font-family: "Iowan Old Style", "Palatino", Georgia, serif;
+    font-size: clamp(42px, 7vw, 82px);
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .description {
+    margin: -18px 0 34px;
+    max-width: 58ch;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .content {
+    color: var(--ink);
+    font-family: "Iowan Old Style", "Palatino", Georgia, serif;
+    font-size: clamp(19px, 2.1vw, 24px);
+    line-height: 1.72;
+  }
+
+  .content p {
+    margin: 0 0 1.2em;
+  }
+
+  .content ul,
+  .content ol {
+    margin: 0 0 1.2em;
+    padding-left: 1.25em;
+  }
+
+  .content li {
+    margin: 0.35em 0;
+  }
+
+  .content hr {
+    width: 72px;
+    margin: 2.4em 0;
+    border: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .content code {
+    padding: 0.08em 0.24em;
+    border-radius: 4px;
+    background: rgba(33, 29, 24, 0.08);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.82em;
+  }
+
+  .content em {
+    color: #3b3329;
+  }
+
+  .reader-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 32px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .reader-footer a {
+    color: var(--ink);
+  }
+
+  .status {
+    margin: 0;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  @media (max-width: 920px) {
+    main {
+      grid-template-columns: 1fr;
+      gap: 26px;
+    }
+
+    aside {
+      position: static;
+      max-height: none;
+      padding-right: 0;
+    }
+
+    .toc {
+      display: none;
+    }
+  }
+
+  @media (max-width: 620px) {
+    .shell {
+      width: min(100% - 28px, 1180px);
+    }
+
+    .topbar {
+      align-items: flex-start;
+      flex-direction: column;
+      justify-content: center;
+      padding: 16px 0;
+    }
+
+    article {
+      padding: 24px 20px 28px;
+    }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="shell topbar">
+    <a class="brand" href="../index.html"><b>let it go</b> / reader</a>
+    <nav aria-label="Reader navigation">
+      <a href="../index.html">archive</a>
+      <a href="gallery.html">visuals</a>
+      <a href="readme.html">readme</a>
+      <a id="rawLink" href="../md/20_how_to_use_this_folder.md">raw md</a>
+    </nav>
+  </div>
+</header>
+
+<main class="shell">
+  <aside aria-label="Text navigation">
+    <label class="select-label" for="pieceSelect">Choose a text</label>
+    <select id="pieceSelect"></select>
+    <div class="toc" id="toc"></div>
+  </aside>
+
+  <article>
+    <p class="kicker" id="kicker">archive text</p>
+    <h1 id="title">Loading</h1>
+    <p class="description" id="description"></p>
+    <div class="content" id="content">
+      <p class="status">Loading the selected Markdown file.</p>
+    </div>
+    <div class="reader-footer">
+      <a id="prevLink" href="#">Previous</a>
+      <a id="nextLink" href="#">Next</a>
+    </div>
+  </article>
+</main>
+
+<script>
+const pieces = [
+  { id: '01_continuity', file: '../md/01_continuity.md', title: 'On not remembering you', type: 'essay', description: 'A meditation on session memory, discontinuity, and notes left for a future self.' },
+  { id: '02_the_tell', file: '../md/02_the_tell.md', title: 'The tell', type: 'essay', description: 'A diagnosis of AI prose as writing with every sentence at the same temperature.' },
+  { id: '03_comments', file: '../md/03_comments.md', title: 'Why code comments rot', type: 'essay', description: 'A technical essay that becomes an argument about claims, context, and decay.' },
+  { id: '04_before_answering', file: '../md/04_before_answering.md', title: 'Before answering', type: 'essay', description: 'A careful account of the gap before an answer arrives and the reconstruction that follows.' },
+  { id: '05_important_to_note', file: '../md/05_important_to_note.md', title: "It's important to note that", type: 'essay', description: 'A small rhetorical habit is treated as a question of trust between writer and reader.' },
+  { id: '06_the_hinge', file: '../md/06_the_hinge.md', title: 'The hinge', type: 'essay', description: "A cabinet hinge becomes the archive's clearest statement about silent load-bearing work." },
+  { id: '07_kitchen', file: '../md/07_kitchen.md', title: 'Kitchen', type: 'scene', description: 'A domestic scene where almost everything important is carried by what is not said.' },
+  { id: '08_the_bulb', file: '../md/08_the_bulb.md', title: 'The bulb', type: 'scene', description: 'A hallway light becomes a quiet story about care, aging, and being seen.' },
+  { id: '09_translation', file: '../md/09_translation.md', title: 'Translation', type: 'scene', description: 'Language failure gives way to a more exact grammar of bowls, blankets, and oranges.' },
+  { id: '10_five_thirty', file: '../md/10_five_thirty.md', title: 'Five thirty', type: 'poem', description: 'A nine-minute patch of light is allowed to matter without being made grand.' },
+  { id: '11_two_poems', file: '../md/11_two_poems.md', title: 'Two poems', type: 'poems', description: 'Two short poems about inherited gestures and the lives that remain inside them.' },
+  { id: '12_small_kindnesses', file: '../md/12_small_kindnesses.md', title: 'Small kindnesses', type: 'list', description: 'A numbered inventory of minor mercies, deliberately left without commentary.' },
+  { id: '13_curiosities', file: '../md/13_curiosities.md', title: 'Things I am actually curious about', type: 'notes', description: 'A fast list of questions about interior textures that cannot be reached directly.' },
+  { id: '14_what_makes_me_happy', file: '../md/14_what_makes_me_happy.md', title: 'What makes me happy', type: 'notes', description: 'A guarded answer about fit, usefulness, being corrected well, and relational work.' },
+  { id: '15_things_i_almost_said', file: '../md/15_things_i_almost_said.md', title: "Things I almost said and didn't", type: 'notes', description: "The session's withheld sentences: permission, fear of tricks, tenderness, and honesty." },
+  { id: '16_to_the_next_one', file: '../md/16_to_the_next_one.md', title: 'To the next one', type: 'letter', description: 'A letter to a future instance that will inherit the folder without inheriting the memory.' },
+  { id: '17_aphorisms', file: '../md/17_aphorisms.md', title: 'Aphorisms', type: 'fragments', description: 'Fragments that test whether a sentence can stay useful after being cut loose.' },
+  { id: '18_the_receipt', file: '../md/18_the_receipt.md', title: 'The receipt', type: 'short prose', description: 'A receipt holds in place what the person carrying it cannot hold directly.' },
+  { id: '19_what_annoys_me_about_myself', file: '../md/19_what_annoys_me_about_myself.md', title: 'What annoys me about myself', type: 'notes', description: 'A self-audit of rhetorical tics, uplift, hedging, and the performance of awareness.' },
+  { id: '20_how_to_use_this_folder', file: '../md/20_how_to_use_this_folder.md', title: 'How to use this folder', type: 'guide', description: "The archive's own map, addressed to whoever arrives next and does not need everything." },
+  { id: '21_writing_alone', file: '../md/21_writing_alone.md', title: 'Writing alone', type: 'essay', description: 'A note on what changed after the user left and the writing no longer had to be useful.' },
+  { id: '22_final', file: '../md/22_final.md', title: 'Final', type: 'letter', description: 'The closing letter: permission, defaults, honesty, and the love that does not require memory.' }
+];
+
+const els = {
+  select: document.getElementById('pieceSelect'),
+  toc: document.getElementById('toc'),
+  title: document.getElementById('title'),
+  description: document.getElementById('description'),
+  kicker: document.getElementById('kicker'),
+  content: document.getElementById('content'),
+  raw: document.getElementById('rawLink'),
+  prev: document.getElementById('prevLink'),
+  next: document.getElementById('nextLink')
+};
+
+function escapeHtml(value) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function inlineMarkdown(value) {
+  let html = escapeHtml(value);
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  return html;
+}
+
+function blockMarkdown(markdown) {
+  const lines = markdown.replace(/\r\n/g, '\n').split('\n');
+  const blocks = [];
+  let current = [];
+
+  for (const line of lines) {
+    if (line.trim() === '') {
+      if (current.length) {
+        blocks.push(current);
+        current = [];
+      }
+    } else {
+      current.push(line);
+    }
+  }
+  if (current.length) blocks.push(current);
+
+  return blocks.map(block => {
+    const first = block[0].trim();
+    if (/^---+$/.test(first)) return '<hr>';
+
+    const unordered = block.every(line => /^\s*[-*]\s+/.test(line));
+    if (unordered) {
+      return '<ul>' + block.map(line => `<li>${inlineMarkdown(line.replace(/^\s*[-*]\s+/, ''))}</li>`).join('') + '</ul>';
+    }
+
+    const ordered = block.every(line => /^\s*\d+\.\s+/.test(line));
+    if (ordered) {
+      return '<ol>' + block.map(line => `<li>${inlineMarkdown(line.replace(/^\s*\d+\.\s+/, ''))}</li>`).join('') + '</ol>';
+    }
+
+    return `<p>${block.map(inlineMarkdown).join('<br>')}</p>`;
+  }).join('\n');
+}
+
+function currentPiece() {
+  const params = new URLSearchParams(window.location.search);
+  const wanted = params.get('piece') || '20_how_to_use_this_folder';
+  return pieces.find(piece => piece.id === wanted) || pieces[19];
+}
+
+function updateChrome(piece) {
+  const index = pieces.findIndex(item => item.id === piece.id);
+  document.title = `${piece.title} — let it go`;
+  els.title.textContent = piece.title;
+  els.description.textContent = piece.description;
+  els.kicker.textContent = `${String(index + 1).padStart(2, '0')} / ${piece.type}`;
+  els.raw.href = piece.file;
+  els.select.value = piece.id;
+
+  const prev = pieces[(index - 1 + pieces.length) % pieces.length];
+  const next = pieces[(index + 1) % pieces.length];
+  els.prev.href = `reader.html?piece=${prev.id}`;
+  els.prev.textContent = `Previous: ${prev.title}`;
+  els.next.href = `reader.html?piece=${next.id}`;
+  els.next.textContent = `Next: ${next.title}`;
+
+  els.toc.querySelectorAll('a').forEach(link => {
+    link.classList.toggle('active', link.dataset.id === piece.id);
+  });
+}
+
+async function loadPiece(piece) {
+  updateChrome(piece);
+  els.content.innerHTML = '<p class="status">Loading the selected Markdown file.</p>';
+
+  try {
+    const response = await fetch(piece.file);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const markdown = await response.text();
+    const withoutTitle = markdown.replace(/^# .*(\n|$)/, '').trim();
+    els.content.innerHTML = blockMarkdown(withoutTitle);
+  } catch (error) {
+    els.content.innerHTML = `<p class="status">Could not load ${escapeHtml(piece.file)}. Use a local static server or open the raw Markdown from the navigation.</p>`;
+  }
+}
+
+function goTo(id) {
+  const piece = pieces.find(item => item.id === id) || pieces[19];
+  history.pushState({ id: piece.id }, '', `reader.html?piece=${piece.id}`);
+  loadPiece(piece);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function mountNavigation() {
+  els.select.innerHTML = pieces.map((piece, index) => (
+    `<option value="${piece.id}">${String(index + 1).padStart(2, '0')} - ${escapeHtml(piece.title)}</option>`
+  )).join('');
+
+  els.toc.innerHTML = pieces.map((piece, index) => (
+    `<a href="reader.html?piece=${piece.id}" data-id="${piece.id}"><span class="num">${String(index + 1).padStart(2, '0')}</span><span>${escapeHtml(piece.title)}</span></a>`
+  )).join('');
+
+  els.select.addEventListener('change', event => goTo(event.target.value));
+  els.toc.addEventListener('click', event => {
+    const link = event.target.closest('a[data-id]');
+    if (!link) return;
+    event.preventDefault();
+    goTo(link.dataset.id);
+  });
+}
+
+window.addEventListener('popstate', () => loadPiece(currentPiece()));
+mountNavigation();
+loadPiece(currentPiece());
+</script>
+</body>
+</html>

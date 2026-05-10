@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>let it go — flow</title>
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a12'/><circle cx='16' cy='16' r='7' fill='none' stroke='%23a8b4ff' stroke-width='1'/><circle cx='16' cy='16' r='12' fill='none' stroke='%23e8e0a0' stroke-width='0.5' opacity='0.5'/></svg>">
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #05050a;
+    overflow: hidden;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    color: #8a8aa0;
+  }
+  #stage {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+  }
+  canvas {
+    position: absolute;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    display: block;
+  }
+  #bloom {
+    filter: blur(18px) saturate(1.4);
+    opacity: 0.55;
+    mix-blend-mode: screen;
+    pointer-events: none;
+  }
+  #main { cursor: crosshair; }
+  #hud {
+    position: fixed;
+    top: 14px;
+    left: 16px;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    user-select: none;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    opacity: 0.7;
+  }
+  #hud .title {
+    color: #f4f4ff;
+    font-weight: 500;
+  }
+  #hud .sub {
+    margin-top: 4px;
+    font-size: 10px;
+    opacity: 0.6;
+    letter-spacing: 0.14em;
+  }
+  #meta {
+    position: fixed;
+    bottom: 14px;
+    right: 16px;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0.45;
+    user-select: none;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    text-align: right;
+  }
+  #meta b { color: #f4f4ff; font-weight: 500; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="bloom"></canvas>
+  <canvas id="main"></canvas>
+</div>
+<div id="hud">
+  <div class="title">let it go</div>
+  <div class="sub">drift · click to bloom · space to breathe · s to save</div>
+</div>
+<div id="meta">
+  <div><b id="era">—</b> era</div>
+  <div><span id="fps">0</span> fps</div>
+</div>
+
+<script>
+(() => {
+  const main = document.getElementById('main');
+  const bloom = document.getElementById('bloom');
+  const mctx = main.getContext('2d');
+  const bctx = bloom.getContext('2d');
+  const eraEl = document.getElementById('era');
+  const fpsEl = document.getElementById('fps');
+
+  let W, H, dpr;
+  let particles = [];
+  let motes = [];
+  let pulses = [];
+
+  let seedX = 0, seedY = 0, targetX = 0, targetY = 0;
+  let t = 0;
+  let eraIndex = 0;
+  let eraT = 0;
+  const ERA_LEN = 1400;
+
+  // Palettes — each era has its own soul.
+  const eras = [
+    { name: 'aurora',   hueBase:  180, hueSpan:  80, bg: '#03060c' },
+    { name: 'ember',    hueBase:   10, hueSpan:  50, bg: '#0a0404' },
+    { name: 'lotus',    hueBase:  300, hueSpan:  60, bg: '#07040a' },
+    { name: 'mist',     hueBase:  210, hueSpan:  30, bg: '#05080c' },
+    { name: 'moss',     hueBase:  110, hueSpan:  70, bg: '#04080a' },
+    { name: 'saffron',  hueBase:   40, hueSpan:  40, bg: '#0a0804' },
+  ];
+
+  const PARTICLE_COUNT = 1100;
+  const MOTE_COUNT = 160;
+  const NOISE_SCALE = 0.0020;
+  const STEP = 1.5;
+
+  // ---- value noise ----
+  const perm = new Uint8Array(512);
+  function seedNoise(seed) {
+    let s = seed >>> 0 || 1;
+    const base = new Uint8Array(256);
+    for (let i = 0; i < 256; i++) base[i] = i;
+    for (let i = 255; i > 0; i--) {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      const j = s % (i + 1);
+      const tmp = base[i]; base[i] = base[j]; base[j] = tmp;
+    }
+    for (let i = 0; i < 512; i++) perm[i] = base[i & 255];
+  }
+  seedNoise(Math.floor(Math.random() * 1e9));
+  const fade = u => u * u * u * (u * (u * 6 - 15) + 10);
+  const lerp = (a, b, u) => a + (b - a) * u;
+  function grad(h, x, y) {
+    const hh = h & 3;
+    const u = hh < 2 ? x : y;
+    const v = hh < 2 ? y : x;
+    return ((hh & 1) ? -u : u) + ((hh & 2) ? -v : v);
+  }
+  function noise2(x, y) {
+    const xi = Math.floor(x) & 255;
+    const yi = Math.floor(y) & 255;
+    const xf = x - Math.floor(x);
+    const yf = y - Math.floor(y);
+    const u = fade(xf), v = fade(yf);
+    const aa = perm[perm[xi] + yi];
+    const ab = perm[perm[xi] + yi + 1];
+    const ba = perm[perm[xi + 1] + yi];
+    const bb = perm[perm[xi + 1] + yi + 1];
+    const x1 = lerp(grad(aa, xf, yf), grad(ba, xf - 1, yf), u);
+    const x2 = lerp(grad(ab, xf, yf - 1), grad(bb, xf - 1, yf - 1), u);
+    return lerp(x1, x2, v);
+  }
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    for (const c of [main, bloom]) {
+      c.width = W * dpr;
+      c.height = H * dpr;
+      c.style.width = W + 'px';
+      c.style.height = H + 'px';
+      const g = c.getContext('2d');
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    clearCanvas();
+    seedX = targetX = W * 0.5;
+    seedY = targetY = H * 0.5;
+  }
+
+  function clearCanvas() {
+    const e = eras[eraIndex];
+    mctx.fillStyle = e.bg;
+    mctx.fillRect(0, 0, W, H);
+    bctx.clearRect(0, 0, W, H);
+  }
+
+  function currentEra() { return eras[eraIndex]; }
+  function nextEra() { return eras[(eraIndex + 1) % eras.length]; }
+  function eraMix() {
+    // Cross-fade the last 180 frames of each era.
+    const fadeLen = 180;
+    if (eraT > ERA_LEN - fadeLen) return (eraT - (ERA_LEN - fadeLen)) / fadeLen;
+    return 0;
+  }
+  function pickHue() {
+    const mix = eraMix();
+    const a = currentEra(), b = nextEra();
+    const base = lerp(a.hueBase, a.hueBase + (b.hueBase - a.hueBase + 540) % 360 - 180, mix);
+    const span = lerp(a.hueSpan, b.hueSpan, mix);
+    return ((base + (Math.random() - 0.5) * span) % 360 + 360) % 360;
+  }
+
+  function spawnParticle(p) {
+    const r = Math.pow(Math.random(), 0.7) * Math.min(W, H) * 0.55;
+    const a = Math.random() * Math.PI * 2;
+    p.x = seedX + Math.cos(a) * r;
+    p.y = seedY + Math.sin(a) * r;
+    p.px = p.x;
+    p.py = p.y;
+    p.life = 140 + Math.random() * 260;
+    p.maxLife = p.life;
+    p.hue = pickHue();
+    p.thick = 0.6 + Math.random() * 0.9;
+  }
+
+  function spawnMote(m) {
+    m.x = Math.random() * W;
+    m.y = Math.random() * H;
+    m.vx = (Math.random() - 0.5) * 0.2;
+    m.vy = (Math.random() - 0.5) * 0.2 - 0.05;
+    m.r = 0.4 + Math.random() * 1.4;
+    m.life = 200 + Math.random() * 600;
+    m.hue = pickHue();
+    m.alpha = 0.15 + Math.random() * 0.35;
+  }
+
+  function initAll() {
+    particles = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const p = {};
+      spawnParticle(p);
+      p.life = Math.random() * p.maxLife;
+      particles.push(p);
+    }
+    motes = [];
+    for (let i = 0; i < MOTE_COUNT; i++) {
+      const m = {};
+      spawnMote(m);
+      motes.push(m);
+    }
+  }
+
+  function triggerPulse(x, y) {
+    pulses.push({ x, y, r: 0, life: 80, hue: pickHue() });
+    seedNoise(Math.floor(Math.random() * 1e9));
+    targetX = x;
+    targetY = y;
+  }
+
+  // ---- FPS ----
+  let fpsSmooth = 60;
+  let lastT = performance.now();
+
+  function step() {
+    const now = performance.now();
+    const dt = Math.min(50, now - lastT);
+    lastT = now;
+    fpsSmooth = fpsSmooth * 0.95 + (1000 / Math.max(1, dt)) * 0.05;
+    fpsEl.textContent = fpsSmooth.toFixed(0);
+
+    t += 1;
+    eraT += 1;
+    if (eraT >= ERA_LEN) {
+      eraIndex = (eraIndex + 1) % eras.length;
+      eraT = 0;
+    }
+    eraEl.textContent = currentEra().name;
+
+    // Soft seed drift so the field keeps breathing even without input.
+    const driftX = Math.cos(t * 0.0012) * W * 0.22;
+    const driftY = Math.sin(t * 0.0009) * H * 0.22;
+    const homeX = targetX + driftX * 0.3;
+    const homeY = targetY + driftY * 0.3;
+    seedX += (homeX - seedX) * 0.02;
+    seedY += (homeY - seedY) * 0.02;
+
+    // Fade main canvas — color-tinted so trails cool toward the era's bg.
+    mctx.fillStyle = currentEra().bg;
+    mctx.globalAlpha = 0.045;
+    mctx.fillRect(0, 0, W, H);
+    mctx.globalAlpha = 1;
+
+    // Clear bloom fully each frame; it's just a blurred copy of bright strokes.
+    bctx.clearRect(0, 0, W, H);
+
+    mctx.globalCompositeOperation = 'lighter';
+    bctx.globalCompositeOperation = 'lighter';
+
+    // ---- particles ----
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      const n1 = noise2(p.x * NOISE_SCALE, p.y * NOISE_SCALE + t * 0.0018);
+      const n2 = noise2(p.x * NOISE_SCALE * 2.3 + 100, p.y * NOISE_SCALE * 2.3 - t * 0.0009);
+      const angle = n1 * Math.PI * 4 + n2 * Math.PI;
+      const speed = STEP * (0.7 + 0.6 * (n2 + 1) * 0.5);
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
+      p.px = p.x; p.py = p.y;
+      p.x += vx; p.y += vy;
+
+      const lifeT = p.life / p.maxLife;
+      const alpha = Math.sin(lifeT * Math.PI) * 0.45;
+      const light = 55 + Math.sin(t * 0.02 + i * 0.01) * 8;
+
+      const stroke = `hsla(${p.hue | 0}, 75%, ${light | 0}%, ${alpha.toFixed(3)})`;
+      mctx.strokeStyle = stroke;
+      mctx.lineWidth = p.thick;
+      mctx.beginPath();
+      mctx.moveTo(p.px, p.py);
+      mctx.lineTo(p.x, p.y);
+      mctx.stroke();
+
+      // Only the brightest strokes feed the bloom layer — keeps it gauzy.
+      if (alpha > 0.28) {
+        bctx.strokeStyle = `hsla(${p.hue | 0}, 85%, ${(light + 10) | 0}%, ${(alpha * 0.7).toFixed(3)})`;
+        bctx.lineWidth = p.thick * 1.6;
+        bctx.beginPath();
+        bctx.moveTo(p.px, p.py);
+        bctx.lineTo(p.x, p.y);
+        bctx.stroke();
+      }
+
+      p.life--;
+      if (p.life <= 0 || p.x < -40 || p.x > W + 40 || p.y < -40 || p.y > H + 40) {
+        spawnParticle(p);
+      }
+    }
+
+    // ---- motes (slow, glowing dust) ----
+    for (let i = 0; i < motes.length; i++) {
+      const m = motes[i];
+      m.x += m.vx;
+      m.y += m.vy;
+      m.life--;
+      if (m.life <= 0 || m.x < -10 || m.x > W + 10 || m.y < -10 || m.y > H + 10) {
+        spawnMote(m);
+        continue;
+      }
+      const g = mctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, m.r * 6);
+      g.addColorStop(0, `hsla(${m.hue | 0}, 80%, 75%, ${m.alpha})`);
+      g.addColorStop(1, `hsla(${m.hue | 0}, 80%, 75%, 0)`);
+      mctx.fillStyle = g;
+      mctx.beginPath();
+      mctx.arc(m.x, m.y, m.r * 6, 0, Math.PI * 2);
+      mctx.fill();
+    }
+
+    // ---- pulses (click ripples) ----
+    for (let i = pulses.length - 1; i >= 0; i--) {
+      const pu = pulses[i];
+      pu.r += 4.5;
+      pu.life--;
+      const a = Math.max(0, pu.life / 80) * 0.6;
+      mctx.strokeStyle = `hsla(${pu.hue | 0}, 80%, 70%, ${a})`;
+      mctx.lineWidth = 1.2;
+      mctx.beginPath();
+      mctx.arc(pu.x, pu.y, pu.r, 0, Math.PI * 2);
+      mctx.stroke();
+      bctx.strokeStyle = `hsla(${pu.hue | 0}, 90%, 80%, ${(a * 0.8).toFixed(3)})`;
+      bctx.lineWidth = 2.4;
+      bctx.beginPath();
+      bctx.arc(pu.x, pu.y, pu.r, 0, Math.PI * 2);
+      bctx.stroke();
+      if (pu.life <= 0) pulses.splice(i, 1);
+    }
+
+    mctx.globalCompositeOperation = 'source-over';
+    bctx.globalCompositeOperation = 'source-over';
+    requestAnimationFrame(step);
+  }
+
+  // ---- input ----
+  window.addEventListener('resize', resize);
+  window.addEventListener('pointermove', (e) => {
+    targetX += (e.clientX - targetX) * 0.2;
+    targetY += (e.clientY - targetY) * 0.2;
+  });
+  window.addEventListener('pointerdown', (e) => triggerPulse(e.clientX, e.clientY));
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      clearCanvas();
+    } else if (e.key === 's' || e.key === 'S') {
+      // Snapshot: flatten main + bloom into a PNG
+      const out = document.createElement('canvas');
+      out.width = main.width;
+      out.height = main.height;
+      const octx = out.getContext('2d');
+      octx.drawImage(main, 0, 0);
+      octx.globalCompositeOperation = 'screen';
+      octx.filter = 'blur(18px) saturate(1.4)';
+      octx.globalAlpha = 0.55;
+      octx.drawImage(bloom, 0, 0);
+      const a = document.createElement('a');
+      a.download = `let-it-go-${currentEra().name}-${Date.now()}.png`;
+      a.href = out.toDataURL('image/png');
+      a.click();
+    } else if (e.key === 'n' || e.key === 'N') {
+      eraIndex = (eraIndex + 1) % eras.length;
+      eraT = 0;
+    }
+  });
+
+  resize();
+  initAll();
+  step();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>fold — kaleidoscope</title>
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%2305050a'/><g transform='translate(16 16)' fill='none' stroke='%23e2b4ff' stroke-width='0.8'><path d='M0 -10 L2 -2 L10 0 L2 2 L0 10 L-2 2 L-10 0 L-2 -2 Z'/><path d='M0 -6 L6 0 L0 6 L-6 0 Z' stroke='%238047b8'/></g></svg>">
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #05050a;
+    overflow: hidden;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    color: #8a8aa0;
+  }
+  canvas {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    display: block;
+    cursor: crosshair;
+  }
+  #hud {
+    position: fixed;
+    top: 14px;
+    left: 16px;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    user-select: none;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    opacity: 0.7;
+  }
+  #hud .title { color: #f4f4ff; font-weight: 500; }
+  #hud .sub {
+    margin-top: 4px;
+    font-size: 10px;
+    opacity: 0.6;
+    letter-spacing: 0.14em;
+  }
+  #meta {
+    position: fixed;
+    bottom: 14px;
+    right: 16px;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0.5;
+    user-select: none;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    text-align: right;
+  }
+  #meta b { color: #f4f4ff; font-weight: 500; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div class="title">fold</div>
+  <div class="sub">move · [ ] change symmetry · r reseed · space clear · s save</div>
+</div>
+<div id="meta">
+  <div><b id="sym">—</b>-fold</div>
+  <div><span id="mode">drift</span></div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const symEl = document.getElementById('sym');
+  const modeEl = document.getElementById('mode');
+
+  // Kaleidoscope: draw a single "slice" into a wedge, then reflect & rotate
+  // that wedge around the center to produce the full pattern for free.
+  // The slice content is a few roaming agents leaving noisy trails.
+
+  let W, H, dpr, cx, cy;
+  let symmetry = 8; // number of rotational copies (with mirror, so 2x lines of symmetry)
+  let t = 0;
+
+  // ---- value noise (same pattern as the other pieces) ----
+  const perm = new Uint8Array(512);
+  function seedNoise(seed) {
+    let s = seed >>> 0 || 1;
+    const base = new Uint8Array(256);
+    for (let i = 0; i < 256; i++) base[i] = i;
+    for (let i = 255; i > 0; i--) {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      const j = s % (i + 1);
+      const tmp = base[i]; base[i] = base[j]; base[j] = tmp;
+    }
+    for (let i = 0; i < 512; i++) perm[i] = base[i & 255];
+  }
+  seedNoise(Math.floor(Math.random() * 1e9));
+  const fade = u => u * u * u * (u * (u * 6 - 15) + 10);
+  const lerp = (a, b, u) => a + (b - a) * u;
+  function grad(h, x, y) {
+    const hh = h & 3;
+    const u = hh < 2 ? x : y;
+    const v = hh < 2 ? y : x;
+    return ((hh & 1) ? -u : u) + ((hh & 2) ? -v : v);
+  }
+  function noise2(x, y) {
+    const xi = Math.floor(x) & 255, yi = Math.floor(y) & 255;
+    const xf = x - Math.floor(x), yf = y - Math.floor(y);
+    const u = fade(xf), v = fade(yf);
+    const aa = perm[perm[xi] + yi];
+    const ab = perm[perm[xi] + yi + 1];
+    const ba = perm[perm[xi + 1] + yi];
+    const bb = perm[perm[xi + 1] + yi + 1];
+    const x1 = lerp(grad(aa, xf, yf), grad(ba, xf - 1, yf), u);
+    const x2 = lerp(grad(ab, xf, yf - 1), grad(bb, xf - 1, yf - 1), u);
+    return lerp(x1, x2, v);
+  }
+
+  // ---- agents: little wanderers inside the slice ----
+  const AGENT_COUNT = 6;
+  const agents = [];
+  function spawnAgent(a) {
+    const r = Math.random() * Math.min(W, H) * 0.35;
+    const ang = Math.random() * Math.PI / symmetry; // stay in the primary wedge
+    a.x = Math.cos(ang) * r;
+    a.y = Math.sin(ang) * r;
+    a.vx = 0;
+    a.vy = 0;
+    a.hue = (t * 0.1 + Math.random() * 360) % 360;
+    a.life = 160 + Math.random() * 260;
+    a.thick = 0.5 + Math.random() * 1.2;
+  }
+  function initAgents() {
+    agents.length = 0;
+    for (let i = 0; i < AGENT_COUNT; i++) {
+      const a = {};
+      spawnAgent(a);
+      agents.push(a);
+    }
+  }
+
+  let pointerActive = false;
+  let pointerX = 0, pointerY = 0;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cx = W / 2;
+    cy = H / 2;
+    clearAll();
+  }
+
+  function clearAll() {
+    ctx.fillStyle = '#05050a';
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function drawSegment(x1, y1, x2, y2, hue, alpha, thick) {
+    // Draw into every symmetric copy, with mirror reflections.
+    const step = (Math.PI * 2) / symmetry;
+    for (let i = 0; i < symmetry; i++) {
+      const a = i * step;
+      const cosA = Math.cos(a), sinA = Math.sin(a);
+      // normal
+      const rx1 = cx + x1 * cosA - y1 * sinA;
+      const ry1 = cy + x1 * sinA + y1 * cosA;
+      const rx2 = cx + x2 * cosA - y2 * sinA;
+      const ry2 = cy + x2 * sinA + y2 * cosA;
+      ctx.strokeStyle = `hsla(${hue | 0}, 75%, 62%, ${alpha.toFixed(3)})`;
+      ctx.lineWidth = thick;
+      ctx.beginPath();
+      ctx.moveTo(rx1, ry1);
+      ctx.lineTo(rx2, ry2);
+      ctx.stroke();
+      // mirror
+      const my1 = -y1, my2 = -y2;
+      const mrx1 = cx + x1 * cosA - my1 * sinA;
+      const mry1 = cy + x1 * sinA + my1 * cosA;
+      const mrx2 = cx + x2 * cosA - my2 * sinA;
+      const mry2 = cy + x2 * sinA + my2 * cosA;
+      ctx.beginPath();
+      ctx.moveTo(mrx1, mry1);
+      ctx.lineTo(mrx2, mry2);
+      ctx.stroke();
+    }
+  }
+
+  function step() {
+    t += 1;
+
+    // Gentle fade — slower than the flow field so structures linger.
+    ctx.fillStyle = 'rgba(5, 5, 10, 0.02)';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.globalCompositeOperation = 'lighter';
+
+    const wedgeAngle = (Math.PI * 2) / symmetry;
+    const maxR = Math.min(W, H) * 0.45;
+
+    for (let i = 0; i < agents.length; i++) {
+      const a = agents[i];
+      // Force via noise, recentered so the field drifts.
+      const n1 = noise2(a.x * 0.004 + 10, a.y * 0.004 + t * 0.002);
+      const n2 = noise2(a.x * 0.009 - 5, a.y * 0.009 - t * 0.0015);
+      const angle = n1 * Math.PI * 3 + n2 * Math.PI;
+      a.vx += Math.cos(angle) * 0.15;
+      a.vy += Math.sin(angle) * 0.15;
+
+      // Pull toward cursor direction (relative to center) when active,
+      // so the user "guides" the pattern without breaking symmetry.
+      if (pointerActive) {
+        const dx = (pointerX - cx);
+        const dy = (pointerY - cy);
+        const len = Math.hypot(dx, dy) || 1;
+        a.vx += (dx / len) * 0.12;
+        a.vy += (dy / len) * 0.12;
+      }
+
+      a.vx *= 0.92;
+      a.vy *= 0.92;
+
+      const px = a.x, py = a.y;
+      a.x += a.vx;
+      a.y += a.vy;
+
+      // Keep inside the primary wedge via reflection — preserves pattern continuity.
+      const r = Math.hypot(a.x, a.y);
+      if (r > maxR) {
+        const s = maxR / r;
+        a.x *= s;
+        a.y *= s;
+        a.vx *= -0.5;
+        a.vy *= -0.5;
+      }
+      let ang = Math.atan2(a.y, a.x);
+      if (ang < 0) ang += Math.PI * 2;
+      if (ang > wedgeAngle) {
+        // Reflect across the wedge edge.
+        const m = Math.tan(wedgeAngle);
+        // reflection across line y = m*x
+        const d = (a.x + a.y * m) / (1 + m * m);
+        a.x = 2 * d - a.x;
+        a.y = 2 * d * m - a.y;
+      }
+
+      const lifeT = a.life / 420;
+      const alpha = Math.min(0.7, 0.4 + Math.sin(t * 0.01 + i) * 0.1);
+      drawSegment(px, py, a.x, a.y, a.hue, alpha, a.thick);
+
+      // Slow hue drift so the piece evolves through color over time.
+      a.hue = (a.hue + 0.25) % 360;
+
+      a.life--;
+      if (a.life <= 0) spawnAgent(a);
+    }
+
+    ctx.globalCompositeOperation = 'source-over';
+    requestAnimationFrame(step);
+  }
+
+  function updateHud() {
+    symEl.textContent = symmetry;
+    modeEl.textContent = pointerActive ? 'guide' : 'drift';
+  }
+
+  window.addEventListener('resize', resize);
+  window.addEventListener('pointermove', (e) => {
+    pointerActive = true;
+    pointerX = e.clientX;
+    pointerY = e.clientY;
+    updateHud();
+  });
+  window.addEventListener('pointerleave', () => {
+    pointerActive = false;
+    updateHud();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === '[') {
+      symmetry = Math.max(3, symmetry - 1);
+      updateHud();
+    } else if (e.key === ']') {
+      symmetry = Math.min(18, symmetry + 1);
+      updateHud();
+    } else if (e.key === 'r' || e.key === 'R') {
+      seedNoise(Math.floor(Math.random() * 1e9));
+      initAgents();
+    } else if (e.code === 'Space') {
+      e.preventDefault();
+      clearAll();
+    } else if (e.key === 's' || e.key === 'S') {
+      const a = document.createElement('a');
+      a.download = `fold-${symmetry}-${Date.now()}.png`;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    }
+  });
+
+  resize();
+  initAgents();
+  updateHud();
+  step();
+})();
+</script>
+</body>
+</html>

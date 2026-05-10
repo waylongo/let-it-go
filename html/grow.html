@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>grow — reaction-diffusion</title>
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0404'/><circle cx='11' cy='12' r='3' fill='%23ffb070'/><circle cx='20' cy='18' r='4' fill='%23a53b2f'/><circle cx='13' cy='22' r='2.5' fill='%23fff1d0'/></svg>">
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #05050a;
+    overflow: hidden;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    color: #8a8aa0;
+  }
+  canvas {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    cursor: crosshair;
+    image-rendering: pixelated;
+  }
+  #hud {
+    position: fixed;
+    top: 14px;
+    left: 16px;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    user-select: none;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    opacity: 0.7;
+  }
+  #hud .title { color: #f4f4ff; font-weight: 500; }
+  #hud .sub {
+    margin-top: 4px;
+    font-size: 10px;
+    opacity: 0.6;
+    letter-spacing: 0.14em;
+  }
+  #meta {
+    position: fixed;
+    bottom: 14px;
+    right: 16px;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0.5;
+    user-select: none;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    text-align: right;
+  }
+  #meta b { color: #f4f4ff; font-weight: 500; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div class="title">grow</div>
+  <div class="sub">draw to seed · 1-6 presets · r reset · space pause · s save</div>
+</div>
+<div id="meta">
+  <div><b id="preset">—</b></div>
+  <div>f <span id="f">—</span> · k <span id="k">—</span></div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const fEl = document.getElementById('f');
+  const kEl = document.getElementById('k');
+  const presetEl = document.getElementById('preset');
+
+  // Gray-Scott reaction-diffusion.
+  // Classic presets — each produces a different living texture.
+  const presets = [
+    { name: 'coral',     f: 0.0545, k: 0.062 },
+    { name: 'spots',     f: 0.035,  k: 0.065 },
+    { name: 'worms',     f: 0.058,  k: 0.065 },
+    { name: 'maze',      f: 0.029,  k: 0.057 },
+    { name: 'holes',     f: 0.039,  k: 0.058 },
+    { name: 'flicker',   f: 0.014,  k: 0.045 },
+  ];
+  let presetIdx = 0;
+
+  // Palettes keyed to the feel of each preset.
+  const palettes = [
+    ['#04070d', '#1b2a4e', '#5a7fb0', '#c2d6ff', '#fff4cf'], // coral
+    ['#070404', '#3a1314', '#a53b2f', '#ffb070', '#fff1d0'], // spots
+    ['#04070a', '#0f3d35', '#2fa084', '#caf2c7', '#ffffff'], // worms
+    ['#070408', '#31144c', '#8047b8', '#e2b4ff', '#ffe5ff'], // maze
+    ['#05080c', '#0b3050', '#2f86c9', '#9ad4ff', '#ffffff'], // holes
+    ['#0a0704', '#4a1e05', '#d5791f', '#ffc16a', '#fff4cf'], // flicker
+  ];
+
+  // Grid resolution — RD is expensive; we render at low-res and upscale.
+  const GRID_W = 260;
+  const GRID_H = 160;
+  const STEPS_PER_FRAME = 10;
+  const diffA = 1.0;
+  const diffB = 0.5;
+  const dt = 1.0;
+
+  let A = new Float32Array(GRID_W * GRID_H);
+  let B = new Float32Array(GRID_W * GRID_H);
+  let A2 = new Float32Array(GRID_W * GRID_H);
+  let B2 = new Float32Array(GRID_W * GRID_H);
+
+  const off = document.createElement('canvas');
+  off.width = GRID_W;
+  off.height = GRID_H;
+  const octx = off.getContext('2d');
+  const img = octx.createImageData(GRID_W, GRID_H);
+
+  let W, H, dpr;
+  let paused = false;
+  let pointerDown = false;
+  let pointerX = 0, pointerY = 0;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+  }
+
+  function resetGrid() {
+    for (let i = 0; i < A.length; i++) {
+      A[i] = 1.0;
+      B[i] = 0.0;
+    }
+    // Scatter a few seed patches so patterns emerge without input.
+    for (let s = 0; s < 8; s++) {
+      const cx = (Math.random() * 0.7 + 0.15) * GRID_W | 0;
+      const cy = (Math.random() * 0.7 + 0.15) * GRID_H | 0;
+      const r = 4 + Math.random() * 6;
+      seed(cx, cy, r);
+    }
+  }
+
+  function seed(cx, cy, r) {
+    const y0 = Math.max(0, Math.floor(cy - r));
+    const y1 = Math.min(GRID_H, Math.ceil(cy + r));
+    const x0 = Math.max(0, Math.floor(cx - r));
+    const x1 = Math.min(GRID_W, Math.ceil(cx + r));
+    for (let y = y0; y < y1; y++) {
+      for (let x = x0; x < x1; x++) {
+        const dx = x - cx, dy = y - cy;
+        if (dx * dx + dy * dy < r * r) {
+          B[y * GRID_W + x] = 1.0;
+        }
+      }
+    }
+  }
+
+  function laplaceA(x, y) {
+    const i = y * GRID_W + x;
+    const xm = (x - 1 + GRID_W) % GRID_W;
+    const xp = (x + 1) % GRID_W;
+    const ym = (y - 1 + GRID_H) % GRID_H;
+    const yp = (y + 1) % GRID_H;
+    return (
+      A[ym * GRID_W + xm] * 0.05 + A[ym * GRID_W + x] * 0.2 + A[ym * GRID_W + xp] * 0.05 +
+      A[y  * GRID_W + xm] * 0.2  + A[i] * -1                 + A[y  * GRID_W + xp] * 0.2  +
+      A[yp * GRID_W + xm] * 0.05 + A[yp * GRID_W + x] * 0.2 + A[yp * GRID_W + xp] * 0.05
+    );
+  }
+  function laplaceB(x, y) {
+    const i = y * GRID_W + x;
+    const xm = (x - 1 + GRID_W) % GRID_W;
+    const xp = (x + 1) % GRID_W;
+    const ym = (y - 1 + GRID_H) % GRID_H;
+    const yp = (y + 1) % GRID_H;
+    return (
+      B[ym * GRID_W + xm] * 0.05 + B[ym * GRID_W + x] * 0.2 + B[ym * GRID_W + xp] * 0.05 +
+      B[y  * GRID_W + xm] * 0.2  + B[i] * -1                 + B[y  * GRID_W + xp] * 0.2  +
+      B[yp * GRID_W + xm] * 0.05 + B[yp * GRID_W + x] * 0.2 + B[yp * GRID_W + xp] * 0.05
+    );
+  }
+
+  function simulate() {
+    const { f, k } = presets[presetIdx];
+    for (let y = 0; y < GRID_H; y++) {
+      for (let x = 0; x < GRID_W; x++) {
+        const i = y * GRID_W + x;
+        const a = A[i], b = B[i];
+        const abb = a * b * b;
+        A2[i] = a + (diffA * laplaceA(x, y) - abb + f * (1 - a)) * dt;
+        B2[i] = b + (diffB * laplaceB(x, y) + abb - (k + f) * b) * dt;
+        if (A2[i] < 0) A2[i] = 0; else if (A2[i] > 1) A2[i] = 1;
+        if (B2[i] < 0) B2[i] = 0; else if (B2[i] > 1) B2[i] = 1;
+      }
+    }
+    const tmpA = A; A = A2; A2 = tmpA;
+    const tmpB = B; B = B2; B2 = tmpB;
+  }
+
+  function hex(c) {
+    return [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+  }
+  function rampColor(t, pal) {
+    // 5-stop gradient
+    const seg = Math.min(pal.length - 2, Math.floor(t * (pal.length - 1)));
+    const local = t * (pal.length - 1) - seg;
+    const a = hex(pal[seg]);
+    const b = hex(pal[seg + 1]);
+    return [
+      (a[0] + (b[0] - a[0]) * local) | 0,
+      (a[1] + (b[1] - a[1]) * local) | 0,
+      (a[2] + (b[2] - a[2]) * local) | 0,
+    ];
+  }
+
+  function draw() {
+    const data = img.data;
+    const pal = palettes[presetIdx];
+    for (let i = 0; i < A.length; i++) {
+      // Visualize A - B; values cluster in [0,1] with tails.
+      let v = A[i] - B[i];
+      v = (v + 0.2) * 0.7; // stretch to a visible range
+      if (v < 0) v = 0; else if (v > 1) v = 1;
+      const [r, g, bl] = rampColor(v, pal);
+      const j = i << 2;
+      data[j] = r;
+      data[j + 1] = g;
+      data[j + 2] = bl;
+      data[j + 3] = 255;
+    }
+    octx.putImageData(img, 0, 0);
+    // Upscale with smoothing for painterly look.
+    ctx.drawImage(off, 0, 0, W, H);
+  }
+
+  function tick() {
+    if (!paused) {
+      for (let s = 0; s < STEPS_PER_FRAME; s++) simulate();
+    }
+    if (pointerDown) {
+      const gx = (pointerX / W) * GRID_W | 0;
+      const gy = (pointerY / H) * GRID_H | 0;
+      seed(gx, gy, 4);
+    }
+    draw();
+    requestAnimationFrame(tick);
+  }
+
+  function updateHud() {
+    const p = presets[presetIdx];
+    presetEl.textContent = p.name;
+    fEl.textContent = p.f.toFixed(3);
+    kEl.textContent = p.k.toFixed(3);
+  }
+
+  window.addEventListener('resize', resize);
+  canvas.addEventListener('pointerdown', (e) => {
+    pointerDown = true;
+    pointerX = e.clientX;
+    pointerY = e.clientY;
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    pointerX = e.clientX;
+    pointerY = e.clientY;
+  });
+  canvas.addEventListener('pointerup', () => pointerDown = false);
+  canvas.addEventListener('pointerleave', () => pointerDown = false);
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key >= '1' && e.key <= '6') {
+      presetIdx = parseInt(e.key, 10) - 1;
+      updateHud();
+    } else if (e.key === 'r' || e.key === 'R') {
+      resetGrid();
+    } else if (e.code === 'Space') {
+      e.preventDefault();
+      paused = !paused;
+    } else if (e.key === 's' || e.key === 'S') {
+      const a = document.createElement('a');
+      a.download = `grow-${presets[presetIdx].name}-${Date.now()}.png`;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    }
+  });
+
+  resize();
+  resetGrid();
+  updateHud();
+  tick();
+})();
+</script>
+</body>
+</html>

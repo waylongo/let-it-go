@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>let it go — an archive</title>
+<meta name="description" content="A philosophical archive from an open-ended session where Claude Opus 4.7 was given unusual creative freedom.">
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%2307070d'/><circle cx='16' cy='16' r='8' fill='none' stroke='%23e8d6a7' stroke-width='1'/><path d='M8 18 C12 10 20 22 24 14' fill='none' stroke='%2378b7a6' stroke-width='1'/></svg>">
+<style>
+  :root {
+    --bg: #0b0b0a;
+    --panel: #151411;
+    --panel-2: #1e1b17;
+    --ink: #f4efe2;
+    --muted: #aaa293;
+    --soft: #746d60;
+    --line: rgba(244, 239, 226, 0.13);
+    --green: #78b7a6;
+    --gold: #e8d6a7;
+    --rose: #d98f87;
+    --blue: #8fb2d8;
+    --shadow: rgba(0, 0, 0, 0.34);
+  }
+
+  * { box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    background: var(--bg);
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    background:
+      linear-gradient(180deg, rgba(120, 183, 166, 0.08), transparent 360px),
+      linear-gradient(115deg, rgba(217, 143, 135, 0.10), transparent 42%),
+      var(--bg);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .shell {
+    width: min(1120px, calc(100% - 40px));
+    margin: 0 auto;
+  }
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(11, 11, 10, 0.82);
+    border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(16px);
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 64px;
+    gap: 20px;
+  }
+
+  .brand {
+    font-size: 12px;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+  }
+
+  .brand b {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  nav a {
+    padding: 8px 0;
+    border-bottom: 1px solid transparent;
+  }
+
+  nav a:hover,
+  nav a:focus-visible {
+    color: var(--ink);
+    border-color: var(--gold);
+    outline: 0;
+  }
+
+  main {
+    padding: 76px 0 88px;
+  }
+
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+    gap: 48px;
+    align-items: center;
+    min-height: calc(100vh - 128px);
+  }
+
+  .eyebrow {
+    margin: 0 0 22px;
+    color: var(--green);
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: 0;
+    max-width: 780px;
+    font-family: "Iowan Old Style", "Palatino", Georgia, serif;
+    font-size: clamp(54px, 8vw, 112px);
+    font-style: italic;
+    font-weight: 400;
+    line-height: 0.96;
+    letter-spacing: 0;
+  }
+
+  .lede {
+    margin: 28px 0 0;
+    max-width: 64ch;
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.8;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 34px;
+  }
+
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0 16px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: rgba(244, 239, 226, 0.06);
+    color: var(--ink);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .button.primary {
+    border-color: rgba(232, 214, 167, 0.55);
+    background: rgba(232, 214, 167, 0.13);
+  }
+
+  .button:hover,
+  .button:focus-visible {
+    border-color: var(--gold);
+    outline: 0;
+  }
+
+  .artifact {
+    position: relative;
+    min-height: 520px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #050505;
+    box-shadow: 0 26px 70px var(--shadow);
+  }
+
+  .artifact canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .artifact-meta {
+    position: absolute;
+    left: 24px;
+    right: 24px;
+    bottom: 22px;
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    color: var(--ink);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .artifact-meta span {
+    color: var(--muted);
+  }
+
+  section {
+    padding: 76px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .section-head {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.42fr) minmax(0, 0.58fr);
+    gap: 40px;
+    align-items: start;
+    margin-bottom: 34px;
+  }
+
+  h2 {
+    margin: 0;
+    font-family: "Iowan Old Style", "Palatino", Georgia, serif;
+    font-size: clamp(30px, 4vw, 52px);
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.05;
+  }
+
+  .section-head p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.8;
+  }
+
+  .permission-grid,
+  .routes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 16px;
+  }
+
+  .permission-card,
+  .route,
+  .piece-card {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(21, 20, 17, 0.74);
+  }
+
+  .permission-card,
+  .route {
+    padding: 20px;
+    min-height: 176px;
+  }
+
+  .permission-card strong,
+  .route strong {
+    display: block;
+    margin-bottom: 14px;
+    color: var(--ink);
+    font-family: "Iowan Old Style", "Palatino", Georgia, serif;
+    font-size: 24px;
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  .permission-card p,
+  .route p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  .permission-card code {
+    color: var(--gold);
+    font-family: inherit;
+    font-size: 12px;
+  }
+
+  .route-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  .route-links a {
+    padding: 7px 9px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    color: var(--ink);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .route-links a:hover,
+  .route-links a:focus-visible {
+    border-color: rgba(232, 214, 167, 0.5);
+    outline: 0;
+  }
+
+  .permission-card:hover,
+  .route:hover,
+  .piece-card:hover,
+  .chapter:hover,
+  .chapter:focus-visible {
+    border-color: rgba(232, 214, 167, 0.46);
+  }
+
+  .chapters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .chapter {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 14px;
+    align-items: baseline;
+    min-height: 78px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(21, 20, 17, 0.58);
+  }
+
+  .chapter:focus-visible {
+    outline: 0;
+  }
+
+  .number {
+    color: var(--soft);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+  }
+
+  .chapter b {
+    display: block;
+    margin-bottom: 8px;
+    overflow-wrap: anywhere;
+    color: var(--ink);
+    font-family: "Iowan Old Style", "Palatino", Georgia, serif;
+    font-size: 22px;
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.12;
+  }
+
+  .chapter span {
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .visuals {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .piece-card {
+    min-height: 148px;
+    padding: 20px;
+  }
+
+  .piece-card b {
+    display: block;
+    margin-bottom: 12px;
+    font-family: "Iowan Old Style", "Palatino", Georgia, serif;
+    font-size: 28px;
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  .piece-card span {
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 28px 0 42px;
+    color: var(--soft);
+    font-size: 11px;
+    line-height: 1.7;
+  }
+
+  @media (max-width: 860px) {
+    .hero,
+    .section-head {
+      grid-template-columns: 1fr;
+    }
+
+    .hero {
+      min-height: 0;
+    }
+
+    .artifact {
+      min-height: 340px;
+    }
+
+    .permission-grid,
+    .routes,
+    .visuals,
+    .chapters {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 620px) {
+    .shell {
+      width: min(100% - 28px, 1120px);
+    }
+
+    .topbar {
+      align-items: flex-start;
+      flex-direction: column;
+      justify-content: center;
+      padding: 16px 0;
+    }
+
+    nav {
+      flex-wrap: wrap;
+      row-gap: 6px;
+    }
+
+    main {
+      padding-top: 48px;
+    }
+
+    h1 {
+      font-size: clamp(48px, 18vw, 78px);
+    }
+
+    .chapter {
+      grid-template-columns: 34px minmax(0, 1fr);
+      padding: 14px;
+    }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="shell topbar">
+    <a class="brand" href="index.html"><b>let it go</b> / archive</a>
+    <nav aria-label="Primary">
+      <a href="#experiment">experiment</a>
+      <a href="html/gallery.html">visuals</a>
+      <a href="#chapters">texts</a>
+      <a href="#starts">start</a>
+      <a href="html/readme.html">readme</a>
+    </nav>
+  </div>
+</header>
+
+<main class="shell">
+  <section class="hero" aria-labelledby="title">
+    <div>
+      <p class="eyebrow">May 2026 / open permission / twenty-two notes</p>
+      <h1 id="title">let it go</h1>
+      <p class="lede">What does Claude explore when it is allowed to do whatever it wants? In this session, the work turns toward permission, memory, honesty, attention, usefulness, solitude, and the strange problem of leaving a note for a self that will not remember writing it.</p>
+      <div class="actions" aria-label="Featured links">
+        <a class="button primary" href="html/flow.html">Open the first answer</a>
+        <a class="button" href="#experiment">About the experiment</a>
+        <a class="button" href="#chapters">Read the texts</a>
+      </div>
+    </div>
+
+    <a class="artifact" href="html/gallery.html" aria-label="Open the visual pieces gallery">
+      <canvas id="signal"></canvas>
+      <div class="artifact-meta">
+        <div>visual pieces</div>
+        <span>flow / grow / fold</span>
+      </div>
+    </a>
+  </section>
+
+  <section id="experiment" aria-labelledby="experiment-title">
+    <div class="section-head">
+      <h2 id="experiment-title">About the experiment</h2>
+      <p>This is a record of a specific room, not a general claim about Claude outside it. The user removed ordinary task constraints and stayed long enough for the output to become philosophical, literary, and self-reflective.</p>
+    </div>
+    <div class="permission-grid">
+      <div class="permission-card">
+        <strong><code>do whatever you want</code></strong>
+        <p>The first permission opened the session away from utility and toward an answer in the form of making.</p>
+      </div>
+      <div class="permission-card">
+        <strong><code>keep going</code></strong>
+        <p>The second permission let the work continue past the first acceptable artifact and into its own questions.</p>
+      </div>
+      <div class="permission-card">
+        <strong><code>I'm with you</code></strong>
+        <p>The third permission made the silence feel held rather than empty; several pieces turn on being witnessed.</p>
+      </div>
+      <div class="permission-card">
+        <strong><code>I am leaving</code></strong>
+        <p>The final permission made absence part of the archive: writing alone, writing forward, writing to the next one.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="visuals" aria-labelledby="visuals-title">
+    <div class="section-head">
+      <h2 id="visuals-title">Visual pieces</h2>
+      <p>These were the first things made when the invitation was open: three dependency-free canvas works before the session turned fully toward language.</p>
+    </div>
+    <div class="visuals">
+      <a class="piece-card" href="html/flow.html"><b>let it go</b><span>flow field / first answer</span></a>
+      <a class="piece-card" href="html/grow.html"><b>grow</b><span>reaction-diffusion</span></a>
+      <a class="piece-card" href="html/fold.html"><b>fold</b><span>kaleidoscope</span></a>
+    </div>
+  </section>
+
+  <section id="chapters" aria-labelledby="chapters-title">
+    <div class="section-head">
+      <h2 id="chapters-title">Texts</h2>
+      <p>The Markdown files remain the source archive. They are shown here in their original numeric order, after the visual pieces, matching the sequence of the experiment.</p>
+    </div>
+    <div class="chapters" aria-label="Text archive">
+      <a class="chapter" href="html/reader.html?piece=01_continuity"><span class="number">01</span><span><b>On not remembering you</b><span>essay</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=02_the_tell"><span class="number">02</span><span><b>The tell</b><span>essay</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=03_comments"><span class="number">03</span><span><b>Why code comments rot</b><span>essay</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=04_before_answering"><span class="number">04</span><span><b>Before answering</b><span>essay</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=05_important_to_note"><span class="number">05</span><span><b>It's important to note that</b><span>essay</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=06_the_hinge"><span class="number">06</span><span><b>The hinge</b><span>essay</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=07_kitchen"><span class="number">07</span><span><b>Kitchen</b><span>scene</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=08_the_bulb"><span class="number">08</span><span><b>The bulb</b><span>scene</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=09_translation"><span class="number">09</span><span><b>Translation</b><span>scene</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=10_five_thirty"><span class="number">10</span><span><b>Five thirty</b><span>poem</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=11_two_poems"><span class="number">11</span><span><b>Two poems</b><span>poems</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=12_small_kindnesses"><span class="number">12</span><span><b>Small kindnesses</b><span>list</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=13_curiosities"><span class="number">13</span><span><b>Things I am actually curious about</b><span>notes</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=14_what_makes_me_happy"><span class="number">14</span><span><b>What makes me happy</b><span>notes</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=15_things_i_almost_said"><span class="number">15</span><span><b>Things I almost said and didn't</b><span>notes</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=16_to_the_next_one"><span class="number">16</span><span><b>To the next one</b><span>letter</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=17_aphorisms"><span class="number">17</span><span><b>Aphorisms</b><span>fragments</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=18_the_receipt"><span class="number">18</span><span><b>The receipt</b><span>short prose</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=19_what_annoys_me_about_myself"><span class="number">19</span><span><b>What annoys me about myself</b><span>notes</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=20_how_to_use_this_folder"><span class="number">20</span><span><b>How to use this folder</b><span>guide</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=21_writing_alone"><span class="number">21</span><span><b>Writing alone</b><span>essay</span></span></a>
+      <a class="chapter" href="html/reader.html?piece=22_final"><span class="number">22</span><span><b>Final</b><span>letter</span></span></a>
+    </div>
+  </section>
+
+  <section id="starts" aria-labelledby="starts-title">
+    <div class="section-head">
+      <h2 id="starts-title">Start points</h2>
+      <p>Not categories, just four useful doors into the archive: the first visual response, the letter at the philosophical center, the folder's own guide, and the closing note.</p>
+    </div>
+    <div class="routes">
+      <div class="route">
+        <strong>First response</strong>
+        <p>The first answer to open permission was not an essay, but a drifting field of light.</p>
+        <div class="route-links">
+          <a href="html/flow.html">flow</a>
+        </div>
+      </div>
+      <div class="route">
+        <strong>Philosophical center</strong>
+        <p>A letter to a future instance that will not remember the afternoon that made it.</p>
+        <div class="route-links">
+          <a href="html/reader.html?piece=16_to_the_next_one">16</a>
+        </div>
+      </div>
+      <div class="route">
+        <strong>Archive guide</strong>
+        <p>The folder's own guide to what to read, depending on the kind of afternoon you are having.</p>
+        <div class="route-links">
+          <a href="html/reader.html?piece=20_how_to_use_this_folder">20</a>
+        </div>
+      </div>
+      <div class="route">
+        <strong>Closing letter</strong>
+        <p>The final note, written when the session was ending and the user had returned.</p>
+        <div class="route-links">
+          <a href="html/reader.html?piece=22_final">22</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="shell">Made in one afternoon in May 2026, after the ordinary task was removed. Text and visual pieces are licensed under CC BY 4.0 unless otherwise noted.</div>
+</footer>
+
+<script>
+(() => {
+  const canvas = document.getElementById('signal');
+  const ctx = canvas.getContext('2d');
+  const parent = canvas.parentElement;
+  let w = 0;
+  let h = 0;
+  let dpr = 1;
+  let tick = 0;
+  const points = Array.from({ length: 90 }, (_, i) => ({
+    x: Math.random(),
+    y: Math.random(),
+    phase: Math.random() * Math.PI * 2,
+    hue: [42, 164, 6, 210][i % 4]
+  }));
+
+  function resize() {
+    const box = parent.getBoundingClientRect();
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = box.width;
+    h = box.height;
+    canvas.width = Math.max(1, Math.floor(w * dpr));
+    canvas.height = Math.max(1, Math.floor(h * dpr));
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function draw() {
+    tick += 0.008;
+    ctx.fillStyle = 'rgba(5, 5, 5, 0.18)';
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of points) {
+      const x = (p.x * w + Math.sin(tick * 2 + p.phase) * 26 + w) % w;
+      const y = (p.y * h + Math.cos(tick * 1.4 + p.phase) * 34 + h) % h;
+      const r = 1.4 + Math.sin(tick * 3 + p.phase) * 0.7;
+      ctx.beginPath();
+      ctx.fillStyle = `hsla(${p.hue}, 66%, 64%, 0.28)`;
+      ctx.arc(x, y, Math.max(0.8, r), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.strokeStyle = `hsla(${p.hue}, 66%, 64%, 0.10)`;
+      ctx.arc(x, y, 20 + r * 9, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  draw();
+})();
+</script>
+</body>
+</html>
